@@ -9,18 +9,21 @@ from datetime import datetime
 
 CONFIDENCE = 0.4
 ALERT_OBJECT = "person"
-SAVE_INTERVAL = 3  
+SAVE_INTERVAL = 3
 
 os.makedirs("saved_frames", exist_ok=True)
 
 @st.cache_resource
 def load_model():
+
     return YOLO("yolov8n.pt")
 
 model = load_model()
 
-st.title("🎥 Live Object Detection & Tracing")
-st.write("Point your camera at objects to identify them in real-time")
+st.set_page_config(page_title="Object Detection", layout="wide")
+
+st.title("🎥 Live Object Detection & Tracking")
+st.write("Real-time object detection using YOLOv8 + Streamlit")
 
 class VideoProcessor(VideoProcessorBase):
     def __init__(self):
@@ -31,17 +34,16 @@ class VideoProcessor(VideoProcessorBase):
 
         img = cv2.resize(img, (640, 480))
 
-        results = model.track(
+        results = model.predict(
             img,
-            persist=True,
             conf=CONFIDENCE,
-            verbose=False,
-            imgsz=480
+            verbose=False
         )
 
         annotated_frame = results[0].plot()
 
         counts = {}
+
         if results[0].boxes is not None:
             for cls in results[0].boxes.cls:
                 label = model.names[int(cls)]
@@ -75,20 +77,29 @@ class VideoProcessor(VideoProcessorBase):
 
         if results[0].boxes is not None and len(results[0].boxes) > 0:
             if current_time - self.last_save_time > SAVE_INTERVAL:
-                filename = f"saved_frames/frame_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+
+                filename = (
+                    f"saved_frames/frame_"
+                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                )
+
                 cv2.imwrite(filename, annotated_frame)
+
                 self.last_save_time = current_time
 
-                print("Saved:", filename)  
+                print("Saved:", filename)
 
-        return av.VideoFrame.from_ndarray(annotated_frame, format="bgr24")
+        return av.VideoFrame.from_ndarray(
+            annotated_frame,
+            format="bgr24"
+        )
 
 webrtc_streamer(
     key="object-detection",
     video_processor_factory=VideoProcessor,
-    async_processing=True,
-    rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+    media_stream_constraints={
+        "video": True,
+        "audio": False
     },
-    media_stream_constraints={"video": True, "audio": False},
+    async_processing=True,
 )
