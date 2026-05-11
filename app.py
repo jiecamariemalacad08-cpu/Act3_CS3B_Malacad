@@ -13,8 +13,6 @@ import streamlit as st
 import av
 import cv2
 import glob
-import io
-import zipfile
 from datetime import datetime
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, VideoProcessorBase
@@ -32,6 +30,7 @@ if "gallery_mode" not in st.session_state:
 
 @st.cache_resource
 def load_model():
+
     return YOLO("yolov8n.pt")
 
 model = load_model()
@@ -45,7 +44,12 @@ html, body, [class*="css"] {
 }
 
 .stApp {
-    background: linear-gradient(135deg, #ecfeff 0%, #dbeafe 50%, #ede9fe 100%);
+    background: linear-gradient(
+        135deg,
+        #ecfeff 0%,
+        #dbeafe 50%,
+        #ede9fe 100%
+    );
     color: #1e293b;
 }
 
@@ -65,13 +69,6 @@ html, body, [class*="css"] {
     margin-bottom: 25px;
     font-size: 18px;
     font-weight: 500;
-}
-
-.panel {
-    background: rgba(255,255,255,0.95);
-    padding: 24px;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
 
 .alert-box {
@@ -98,13 +95,18 @@ html, body, [class*="css"] {
     transform: translateY(-2px);
 }
 
+img {
+    border-radius: 14px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="title">Live object Detection & Tracing</div>
+<div class="title">✨ SmartVision AI Monitor</div>
+
 <div class="subtitle">
-Point your camera at objects to identify them in real-time
+Real-Time AI Object Recognition • Tracking • Smart Alerts
 </div>
 """, unsafe_allow_html=True)
 
@@ -145,9 +147,6 @@ with st.sidebar:
 
 class VideoProcessor(VideoProcessorBase):
 
-    def __init__(self):
-        self.prev_objects = set()
-
     def recv(self, frame):
 
         img = frame.to_ndarray(format="bgr24")
@@ -167,13 +166,21 @@ class VideoProcessor(VideoProcessorBase):
 
             for box in results[0].boxes:
 
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                x1, y1, x2, y2 = map(
+                    int,
+                    box.xyxy[0]
+                )
 
                 cls_id = int(box.cls[0])
 
-                label = model.names.get(cls_id, "unknown")
+                label = model.names.get(
+                    cls_id,
+                    "unknown"
+                )
 
-                detected_counts[label] = detected_counts.get(label, 0) + 1
+                detected_counts[label] = (
+                    detected_counts.get(label, 0) + 1
+                )
 
                 if show_boxes:
 
@@ -190,11 +197,10 @@ class VideoProcessor(VideoProcessorBase):
                         label,
                         (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.6,
+                        0.7,
                         (255, 255, 255),
                         2
                     )
-
         y = 30
 
         for obj, count in detected_counts.items():
@@ -222,12 +228,12 @@ class VideoProcessor(VideoProcessorBase):
                 (0, 0, 255),
                 3
             )
-
         if save_images and len(detected_counts) > 0:
 
             filename = os.path.join(
                 SAVE_DIR,
-                f"detection_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                f"detection_"
+                f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
             )
 
             cv2.imwrite(filename, img)
@@ -244,9 +250,28 @@ webrtc_streamer(
     media_stream_constraints={
         "video": True,
         "audio": False
-    },
-    async_processing=True,
+    }
 )
+
+st.markdown("---")
+
+st.subheader("🖼️ Saved Detection Frames")
+
+saved_images = glob.glob(f"{SAVE_DIR}/*.jpg")
+
+if saved_images:
+
+    cols = st.columns(3)
+
+    for i, image_path in enumerate(saved_images[-6:]):
+
+        cols[i % 3].image(
+            image_path,
+            use_column_width=True
+        )
+
+else:
+    st.info("No saved detection frames yet.")
 
 st.markdown("---")
 
