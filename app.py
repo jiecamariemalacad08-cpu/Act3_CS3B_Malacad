@@ -1,28 +1,27 @@
 import subprocess
 import sys
-
 try:
     import tornado
 except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "tornado"])
-
 import os
 os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
-
 import streamlit as st
 import av
 import cv2
 import glob
+import io
+import zipfile
 from datetime import datetime
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, VideoProcessorBase
 
 st.set_page_config(
-    page_title="✨ SmartVision AI Monitor",
+    page_title="📹Live Object Detection & Tracing",
     layout="wide"
 )
 
-SAVE_DIR = "smartvision_captures"
+SAVE_DIR = "detection_logs"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 if "gallery_mode" not in st.session_state:
@@ -30,7 +29,6 @@ if "gallery_mode" not in st.session_state:
 
 @st.cache_resource
 def load_model():
-
     return YOLO("yolov8n.pt")
 
 model = load_model()
@@ -38,113 +36,173 @@ CLASS_NAMES = list(model.names.values())
 
 st.markdown("""
 <style>
-
 html, body, [class*="css"] {
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .stApp {
-    background: linear-gradient(
-        135deg,
-        #ecfeff 0%,
-        #dbeafe 50%,
-        #ede9fe 100%
-    );
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%);
     color: #1e293b;
 }
 
 .title {
     text-align: center;
-    font-size: clamp(34px, 4vw, 54px);
+    font-size: clamp(32px, 4vw, 52px);
     font-weight: 800;
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    background: linear-gradient(135deg, #475569, #334155);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 0;
 }
 
 .subtitle {
     text-align: center;
-    color: #475569;
+    color: #64748b;
     margin-bottom: 25px;
     font-size: 18px;
     font-weight: 500;
 }
 
+.panel {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid #e2e8f0;
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+}
+
+.stat-box {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    padding: 20px;
+    border-radius: 16px;
+    border-left: 4px solid #475569;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+.stat-title {
+    color: #64748b;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+}
+
 .alert-box {
-    background: linear-gradient(135deg, #fb7185, #e11d48);
+    background: linear-gradient(135deg, #f87171, #ef4444);
     color: white;
-    padding: 18px;
+    padding: 20px;
     border-radius: 16px;
     text-align: center;
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
     margin-bottom: 20px;
-}
-
-.stButton > button {
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    color: white;
-    border-radius: 12px;
-    border: none;
-    font-weight: 600;
-    padding: 10px 18px;
-}
-
-.stButton > button:hover {
-    transform: translateY(-2px);
 }
 
 img {
     border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.block-container {
+    padding-top: 2rem;
+}
+.stButton > button {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(103, 116, 139, 0.3);
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #475569, #334155);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(103, 116, 139, 0.4);
+}
+
+.element-container .stDownloadButton > button {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+.element-container .stDownloadButton > button:hover {
+    background: linear-gradient(135deg, #059669, #047857) !important;
+    transform: translateY(-2px);
+}
+
+button[kind="secondary"] {
+    background: linear-gradient(135deg, #f87171, #ef4444) !important;
+}
+
+button[kind="secondary"]:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+.stMarkdown {
+    color: #475569 !important;
+    font-weight: 500 !important;
+}
+
+.stAlert {
+    background: rgba(248, 250, 252, 0.9);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    color: #1e293b;
+}
+
+.css-1d391kg {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="title">✨ SmartVision AI Monitor</div>
+<div class="title">📹Live Object Detection & Tracing</div>
 
-<div class="subtitle">
-Real-Time AI Object Recognition • Tracking • Smart Alerts
-</div>
 """, unsafe_allow_html=True)
 
-st.caption("Developed by Jieca Marie J. Malacad • BSCS 3B")
-
 with st.sidebar:
+    st.markdown("## ⚙️ Detection Settings")
+    confidence = st.slider("Confidence Threshold", 0.1, 1.0, 0.5, 0.05)
+    image_size = st.selectbox("📏 Resolution", [320, 480, 640], index=1)
+    target_object = st.selectbox("🚨 Alert Target", CLASS_NAMES)
+    save_images = st.toggle(" Save Detection", value=True)
+    show_boxes = st.toggle(" Show Bounding Boxes", value=True)
 
-    st.markdown("## 🎛️ Control Center")
+class VideoProcessor(VideoProcessorBase):
+    def __init__(self):
+        self.prev_objects = set()
 
-    confidence = st.slider(
-        "🎯 Detection Accuracy",
-        0.1,
-        1.0,
-        0.5,
-        0.05
-    )
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        img = cv2.flip(img, 1)
 
-    image_size = st.selectbox(
-        "🖥️ Camera Quality",
-        [320, 480, 640],
-        index=1
-    )
+        results = model.predict(img, conf=confidence, imgsz=image_size, verbose=False)
+        detected_counts = {}
+        current_objects = set()
+        alert_detected = False
 
-    target_object = st.selectbox(
-        "🔔 Watch Object",
-        CLASS_NAMES
-    )
-
-    save_images = st.toggle(
-        "📸 Auto Save Frames",
-        value=True
-    )
-
-    show_boxes = st.toggle(
-        "🧩 Show Detection Boxes",
-        value=True
-    )
-
+        if results and results[0].boxes is not None:
+            for box in results[0].boxes:
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                cls_id = int(box.cls[0])
+                label = model.names.get(cls_id, "unknown")
+                detected_counts[label] = detected_counts.get(label, 0) + 1
+                curren
 class VideoProcessor(VideoProcessorBase):
 
     def recv(self, frame):
