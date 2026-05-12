@@ -86,7 +86,7 @@ ul, li {
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="main-title">📹 SmartVision AI</div>
+<div class="main-title">📹 Live Object Detection & Tracing</div>
 <div class="sub-title">Real-Time Object Detection and Tracking using YOLOv8</div>
 """, unsafe_allow_html=True)
 
