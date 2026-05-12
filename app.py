@@ -6,18 +6,15 @@ import av
 import cv2
 from datetime import datetime
 from ultralytics import YOLO
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
-
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 
 st.set_page_config(
     page_title="SmartVision AI",
     layout="wide"
 )
 
-
 SAVE_DIR = "detection_logs"
 os.makedirs(SAVE_DIR, exist_ok=True)
-
 
 @st.cache_resource
 def load_model():
@@ -25,7 +22,6 @@ def load_model():
 
 model = load_model()
 CLASS_NAMES = list(model.names.values())
-
 
 st.markdown("""
 <style>
@@ -38,31 +34,25 @@ html, body, [class*="css"] {
     background: linear-gradient(135deg, #f1f5f9, #dbeafe);
 }
 
-/* SIDEBAR */
-
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, #020617, #0f172a);
     border-right: 2px solid #1e293b;
 }
 
-/* Sidebar Text */
-
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] .stMarkdown,
 section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span {
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] div {
     color: white !important;
 }
 
-/* Selectbox */
-
 div[data-baseweb="select"] > div {
     color: black !important;
+    background-color: white !important;
+    border-radius: 12px !important;
     font-weight: 600;
-    border-radius: 12px;
 }
-
-/* Dropdown */
 
 ul {
     color: black !important;
@@ -72,11 +62,9 @@ li {
     color: black !important;
 }
 
-/* Buttons */
-
 .stButton > button {
     width: 100%;
-    border-radius: 12px;
+    border-radius: 14px;
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
     border: none;
@@ -90,11 +78,9 @@ li {
     background: linear-gradient(135deg, #dc2626, #991b1b);
 }
 
-/* Main Title */
-
 .main-title {
     text-align: center;
-    font-size: 48px;
+    font-size: 52px;
     font-weight: 800;
     color: #0f172a;
     margin-bottom: 10px;
@@ -107,10 +93,8 @@ li {
     margin-bottom: 30px;
 }
 
-/* Tip Box */
-
 .tip-box {
-    background: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.75);
     padding: 15px;
     border-radius: 15px;
     color: #0f172a;
@@ -118,8 +102,6 @@ li {
     border-left: 5px solid #ef4444;
     margin-top: 20px;
 }
-
-/* Detection Alert */
 
 .alert-box {
     background: linear-gradient(135deg, #ef4444, #b91c1c);
@@ -139,17 +121,22 @@ li {
     100% {opacity: 1;}
 }
 
+video {
+    border-radius: 20px;
+    border: 3px solid #0f172a;
+    box-shadow: 0px 8px 30px rgba(0,0,0,0.25);
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-
 st.markdown("""
 <div class="main-title">📹 Live Object Detection & Tracing</div>
+
 <div class="sub-title">
 Point your camera at objects to identify them in real-time
 </div>
 """, unsafe_allow_html=True)
-
 
 with st.sidebar:
 
@@ -183,7 +170,6 @@ with st.sidebar:
     💡 Tip: Use proper lighting for better detection accuracy.
     </div>
     """, unsafe_allow_html=True)
-
 
 class VideoProcessor(VideoProcessorBase):
 
@@ -262,22 +248,11 @@ class VideoProcessor(VideoProcessorBase):
 
 webrtc_streamer(
     key="smartvision",
+    mode=WebRtcMode.SENDRECV,
     video_processor_factory=VideoProcessor,
     media_stream_constraints={
         "video": True,
         "audio": False
     },
-    rtc_configuration={
-        "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {"urls": ["stun:stun1.l.google.com:19302"]}
-        ]
-    }
+    async_processing=True
 )
-
-st.markdown("""
-<br>
-<center>
-<b>Live Object Detection & Tracing • Developed using Streamlit + YOLOv8</b>
-</center>
-""", unsafe_allow_html=True)
