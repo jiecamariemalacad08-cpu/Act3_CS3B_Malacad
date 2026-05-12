@@ -39,6 +39,7 @@ This project was created as part of a computer science activity focused on AI-po
 project_folder/
 │
 ├── app.py
+├── packages.txt
 ├── requirements.txt
 ├── runtime.txt
 ├── README.md
