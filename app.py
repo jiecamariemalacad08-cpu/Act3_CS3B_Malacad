@@ -278,6 +278,6 @@ webrtc_streamer(
 st.markdown("""
 <br>
 <center>
-<b>SmartVision AI • Developed using Streamlit + YOLOv8</b>
+<b>Live Object Detection & Tracing • Developed using Streamlit + YOLOv8</b>
 </center>
 """, unsafe_allow_html=True)
