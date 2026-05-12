@@ -6,7 +6,7 @@ import av
 import cv2
 from datetime import datetime
 from ultralytics import YOLO
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 
 st.set_page_config(page_title="SmartVision AI", layout="wide")
 
@@ -18,11 +18,7 @@ def load_model():
     return YOLO("yolov8n.pt")
 
 model = load_model()
-
-if hasattr(model, "names") and model.names:
-    CLASS_NAMES = sorted(list(model.names.values()))
-else:
-    CLASS_NAMES = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "dog", "cat"]
+CLASS_NAMES = list(model.names.values())
 
 st.markdown("""
 <style>
@@ -39,25 +35,20 @@ section[data-testid="stSidebar"] {
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] .stMarkdown,
 section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] div {
+section[data-testid="stSidebar"] span {
     color: white !important;
 }
 div[data-baseweb="select"] > div {
     color: black !important;
-    background-color: white !important;
-    border-radius: 12px !important;
     font-weight: 600;
-}
-section[data-testid="stSidebar"] div[data-baseweb="select"] {
-    color: black !important;
+    border-radius: 12px;
 }
 ul, li {
     color: black !important;
 }
 .stButton > button {
     width: 100%;
-    border-radius: 14px;
+    border-radius: 12px;
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
     border: none;
@@ -71,7 +62,7 @@ ul, li {
 }
 .main-title {
     text-align: center;
-    font-size: 52px;
+    font-size: 48px;
     font-weight: 800;
     color: #0f172a;
     margin-bottom: 10px;
@@ -83,7 +74,7 @@ ul, li {
     margin-bottom: 30px;
 }
 .tip-box {
-    background: rgba(255,255,255,0.75);
+    background: rgba(255,255,255,0.7);
     padding: 15px;
     border-radius: 15px;
     color: #0f172a;
@@ -91,24 +82,23 @@ ul, li {
     border-left: 5px solid #ef4444;
     margin-top: 20px;
 }
-video {
-    border-radius: 20px;
-    border: 3px solid #0f172a;
-    box-shadow: 0px 8px 30px rgba(0,0,0,0.25);
-}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="main-title">📹 Live Object Detection & Tracing</div>
-<div class="sub-title">Point your camera at objects to identify them in real-time</div>
+<div class="main-title">📹 SmartVision AI</div>
+<div class="sub-title">Real-Time Object Detection and Tracking using YOLOv8</div>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
     st.markdown("## 🎛️ Control Panel")
+
     confidence = st.slider("🎯 Detection Confidence", 0.1, 1.0, 0.5, 0.05)
+
     target_object = st.selectbox("🚨 Alert Object", CLASS_NAMES)
+
     save_images = st.toggle("📸 Save Detection Images", value=True)
+
     show_boxes = st.toggle("🟦 Show Bounding Boxes", value=True)
 
 class VideoProcessor(VideoProcessorBase):
@@ -125,26 +115,35 @@ class VideoProcessor(VideoProcessorBase):
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cls_id = int(box.cls[0])
                 label = model.names.get(cls_id, "Unknown")
+
                 detected_counts[label] = detected_counts.get(label, 0) + 1
 
                 if show_boxes:
                     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     cv2.putText(img, label, (x1, y1 - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                                (255, 255, 255), 2)
 
         if target_object in detected_counts:
-            cv2.putText(img, f"ALERT: {target_object.upper()} DETECTED!",
-                        (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+            cv2.putText(img,
+                        f"ALERT: {target_object.upper()} DETECTED!",
+                        (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        (0, 0, 255),
+                        3)
 
         if save_images and len(detected_counts) > 0:
-            filename = os.path.join(SAVE_DIR, f"detection_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg")
+            filename = os.path.join(
+                SAVE_DIR,
+                f"detection_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+            )
             cv2.imwrite(filename, img)
 
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 webrtc_streamer(
     key="smartvision",
-    mode=WebRtcMode.SENDRECV,
     video_processor_factory=VideoProcessor,
     media_stream_constraints={"video": True, "audio": False},
     async_processing=True
