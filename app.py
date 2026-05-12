@@ -1,31 +1,23 @@
-import subprocess
-import sys
-
-try:
-    import tornado
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "tornado"])
-
 import os
 os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
 
 import streamlit as st
 import av
 import cv2
-import glob
-import io
-import zipfile
 from datetime import datetime
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
+
 
 st.set_page_config(
     page_title="SmartVision AI",
     layout="wide"
 )
 
+
 SAVE_DIR = "detection_logs"
 os.makedirs(SAVE_DIR, exist_ok=True)
+
 
 @st.cache_resource
 def load_model():
@@ -34,54 +26,27 @@ def load_model():
 model = load_model()
 CLASS_NAMES = list(model.names.values())
 
+
 st.markdown("""
 <style>
 
 html, body, [class*="css"] {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Segoe UI', sans-serif;
 }
 
-/* Background */
 .stApp {
-    background: linear-gradient(
-        135deg,
-        #f1f5f9 0%,
-        #dbeafe 50%,
-        #e0f2fe 100%
-    );
-    color: #0f172a;
+    background: linear-gradient(135deg, #f1f5f9, #dbeafe);
 }
 
-/* Main Title */
-.main-title {
-    text-align: center;
-    font-size: 52px;
-    font-weight: 800;
-    color: #0f172a;
-    margin-bottom: 5px;
-    animation: fadeIn 1s ease;
-}
+/* SIDEBAR */
 
-/* Subtitle */
-.sub-title {
-    text-align: center;
-    color: #475569;
-    font-size: 18px;
-    margin-bottom: 30px;
-    animation: fadeIn 1.5s ease;
-}
-
-/* Sidebar */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(
-        180deg,
-        #0f172a 0%,
-        #1e293b 100%
-    );
-    border-right: 3px solid #38bdf8;
+    background: linear-gradient(180deg, #020617, #0f172a);
+    border-right: 2px solid #1e293b;
 }
 
 /* Sidebar Text */
+
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] .stMarkdown,
 section[data-testid="stSidebar"] p,
@@ -89,91 +54,102 @@ section[data-testid="stSidebar"] span {
     color: white !important;
 }
 
-/* Selectbox Selected Text */
+/* Selectbox */
+
 div[data-baseweb="select"] > div {
     color: black !important;
     font-weight: 600;
+    border-radius: 12px;
 }
 
-/* Dropdown Menu */
+/* Dropdown */
+
 ul {
     color: black !important;
 }
 
-/* Dropdown Options */
 li {
     color: black !important;
 }
 
 /* Buttons */
+
 .stButton > button {
     width: 100%;
-    border-radius: 14px;
-    border: none;
-    background: linear-gradient(
-        135deg,
-        #38bdf8,
-        #0ea5e9
-    );
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
-    font-weight: 700;
+    border: none;
     padding: 12px;
-    transition: 0.3s ease;
-    box-shadow: 0px 5px 15px rgba(14,165,233,0.4);
+    font-weight: bold;
+    transition: 0.3s;
 }
 
 .stButton > button:hover {
     transform: scale(1.03);
-    background: linear-gradient(
-        135deg,
-        #0ea5e9,
-        #0284c7
-    );
+    background: linear-gradient(135deg, #dc2626, #991b1b);
 }
 
-/* Toggle */
-[data-baseweb="switch"] {
-    background-color: #38bdf8 !important;
+/* Main Title */
+
+.main-title {
+    text-align: center;
+    font-size: 48px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 10px;
 }
 
-/* Webcam */
-video {
-    border-radius: 20px !important;
-    border: 4px solid #38bdf8;
-    box-shadow: 0px 10px 30px rgba(0,0,0,0.2);
+.sub-title {
+    text-align: center;
+    color: #334155;
+    font-size: 18px;
+    margin-bottom: 30px;
 }
 
-/* Saved Images */
-img {
-    border-radius: 16px;
-    box-shadow: 0px 8px 20px rgba(0,0,0,0.15);
+/* Tip Box */
+
+.tip-box {
+    background: rgba(255,255,255,0.7);
+    padding: 15px;
+    border-radius: 15px;
+    color: #0f172a;
+    font-weight: 600;
+    border-left: 5px solid #ef4444;
+    margin-top: 20px;
 }
 
-/* Animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
+/* Detection Alert */
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.alert-box {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    color: white;
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+    margin-bottom: 20px;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {opacity: 1;}
+    50% {opacity: 0.8;}
+    100% {opacity: 1;}
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-<div class="main-title">
-✨ Live Object Detection & Tracing
-</div>
 
+st.markdown("""
+<div class="main-title">📹 SmartVision AI</div>
 <div class="sub-title">
-Point your camera at objects to identify them in real-time
+Real-Time Object Detection and Tracking using YOLOv8
 </div>
 """, unsafe_allow_html=True)
+
 
 with st.sidebar:
 
@@ -202,11 +178,12 @@ with st.sidebar:
         value=True
     )
 
-    st.markdown("---")
+    st.markdown("""
+    <div class="tip-box">
+    💡 Tip: Use proper lighting for better detection accuracy.
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.info(
-        "📌 Tip: Use proper lighting for better detection accuracy."
-    )
 
 class VideoProcessor(VideoProcessorBase):
 
@@ -219,6 +196,7 @@ class VideoProcessor(VideoProcessorBase):
         results = model.predict(
             img,
             conf=confidence,
+            imgsz=480,
             verbose=False
         )
 
@@ -232,7 +210,7 @@ class VideoProcessor(VideoProcessorBase):
 
                 cls_id = int(box.cls[0])
 
-                label = model.names.get(cls_id, "unknown")
+                label = model.names.get(cls_id, "Unknown")
 
                 detected_counts[label] = detected_counts.get(label, 0) + 1
 
@@ -252,39 +230,23 @@ class VideoProcessor(VideoProcessorBase):
                         (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.7,
-                        (0, 255, 0),
+                        (255, 255, 255),
                         2
                     )
-
-        y_position = 30
-
-        for obj, count in detected_counts.items():
-
-            cv2.putText(
-                img,
-                f"{obj}: {count}",
-                (10, y_position),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (255, 0, 0),
-                2
-            )
-
-            y_position += 30
 
         if target_object in detected_counts:
 
             cv2.putText(
                 img,
                 f"ALERT: {target_object.upper()} DETECTED!",
-                (10, 450),
+                (20, 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.9,
+                1,
                 (0, 0, 255),
                 3
             )
 
-        if save_images and detected_counts:
+        if save_images and len(detected_counts) > 0:
 
             filename = os.path.join(
                 SAVE_DIR,
@@ -293,7 +255,10 @@ class VideoProcessor(VideoProcessorBase):
 
             cv2.imwrite(filename, img)
 
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
+        return av.VideoFrame.from_ndarray(
+            img,
+            format="bgr24"
+        )
 
 webrtc_streamer(
     key="smartvision",
@@ -301,23 +266,17 @@ webrtc_streamer(
     media_stream_constraints={
         "video": True,
         "audio": False
+    },
+    rtc_configuration={
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]}
+        ]
     }
 )
 
-st.markdown("## 🖼️ Saved Detection Frames")
-
-saved_images = glob.glob(f"{SAVE_DIR}/*.jpg")
-
-if saved_images:
-
-    cols = st.columns(3)
-
-    for i, image in enumerate(saved_images[-6:]):
-
-        cols[i % 3].image(
-            image,
-            use_column_width=True
-        )
-
-else:
-    st.info("No saved detection images yet.")
+st.markdown("""
+<br>
+<center>
+<b>SmartVision AI • Developed using Streamlit + YOLOv8</b>
+</center>
+""", unsafe_allow_html=True)
