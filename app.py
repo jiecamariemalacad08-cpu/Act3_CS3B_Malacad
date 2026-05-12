@@ -148,11 +148,11 @@ img {
 
 st.markdown("""
 <div class="main-title">
-✨ SmartVision AI
+✨ Live Object Detection & Tracing
 </div>
 
 <div class="sub-title">
-Live object Detection & Tracing
+Point your camera at objects to identify them in real-time
 </div>
 """, unsafe_allow_html=True)
 
