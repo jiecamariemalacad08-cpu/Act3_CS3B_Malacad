@@ -102,8 +102,8 @@ ul, li {
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="main-title">📹 SmartVision AI</div>
-<div class="sub-title">Real-Time Object Detection and Tracking using YOLOv8</div>
+<div class="main-title">📹 Live Object Detection & Tracing</div>
+<div class="sub-title">Point your camera at objects to identify them in real-time</div>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
@@ -178,5 +178,5 @@ webrtc_streamer(
 
 st.markdown("""
 <br>
-<center><b>SmartVision AI • Developed using Streamlit + YOLOv8</b></center>
+<center><b>Live Object Detection & Tracing • Developed using Streamlit + YOLOv8</b></center>
 """, unsafe_allow_html=True)
