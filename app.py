@@ -82,8 +82,27 @@ section[data-testid="stSidebar"] {
 }
 
 /* Sidebar Text */
-section[data-testid="stSidebar"] * {
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] .stMarkdown,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
     color: white !important;
+}
+
+/* Selectbox Selected Text */
+div[data-baseweb="select"] > div {
+    color: black !important;
+    font-weight: 600;
+}
+
+/* Dropdown Menu */
+ul {
+    color: black !important;
+}
+
+/* Dropdown Options */
+li {
+    color: black !important;
 }
 
 /* Buttons */
