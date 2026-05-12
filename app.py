@@ -202,151 +202,140 @@ class VideoProcessor(VideoProcessorBase):
                 cls_id = int(box.cls[0])
                 label = model.names.get(cls_id, "unknown")
                 detected_counts[label] = detected_counts.get(label, 0) + 1
-                curren
-class VideoProcessor(VideoProcessorBase):
+                current_objects.add(label)
 
-    def recv(self, frame):
-
-        img = frame.to_ndarray(format="bgr24")
-
-        img = cv2.flip(img, 1)
-
-        results = model.predict(
-            img,
-            conf=confidence,
-            imgsz=image_size,
-            verbose=False
-        )
-
-        detected_counts = {}
-
-        if results and results[0].boxes is not None:
-
-            for box in results[0].boxes:
-
-                x1, y1, x2, y2 = map(
-                    int,
-                    box.xyxy[0]
-                )
-
-                cls_id = int(box.cls[0])
-
-                label = model.names.get(
-                    cls_id,
-                    "unknown"
-                )
-
-                detected_counts[label] = (
-                    detected_counts.get(label, 0) + 1
-                )
+                if label.lower() == target_object.lower():
+                    color = (0, 0, 255)
+                    alert_detected = True
+                else:
+                    color = (0, 255, 0)
 
                 if show_boxes:
+                    cv2.rectangle(img, (x1, y1), (x2, y2), color, 3)
+                    cv2.putText(img, f"{label}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
-                    cv2.rectangle(
-                        img,
-                        (x1, y1),
-                        (x2, y2),
-                        (0, 255, 0),
-                        2
-                    )
+        if alert_detected:
+            overlay = img.copy()
+            cv2.rectangle(overlay, (0, 0), (img.shape[1], img.shape[0]), (0, 0, 255), -1)
+            alpha = 0.25
+            img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+            overlay_height = 90
+            cv2.rectangle(img, (0, img.shape[0] - overlay_height), (img.shape[1], img.shape[0]), (0, 0, 255), -1)
+            cv2.putText(img, "ALERT DETECTED!", (40, img.shape[0] - 30), cv2.FONT_HERSHEY_DUPLEX, 1.2, (255, 255, 255), 3)
 
-                    cv2.putText(
-                        img,
-                        label,
-                        (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (255, 255, 255),
-                        2
-                    )
-        y = 30
+        new_objects = current_objects - self.prev_objects
+        if save_images and new_objects:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            for obj in new_objects:
+                filename = f"{SAVE_DIR}/{obj}_{timestamp}.jpg"
+                cv2.imwrite(filename, img)
+        self.prev_objects = current_objects
 
-        for obj, count in detected_counts.items():
-
-            cv2.putText(
-                img,
-                f"{obj}: {count}",
-                (10, y),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 255),
-                2
-            )
-
+        y = 35
+        for obj, cnt in detected_counts.items():
+            cv2.putText(img, f"{obj}: {cnt}", (20, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
             y += 30
 
-        if target_object in detected_counts:
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-            cv2.putText(
-                img,
-                f"ALERT: {target_object.upper()} DETECTED!",
-                (10, 450),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.9,
-                (0, 0, 255),
-                3
-            )
-        if save_images and len(detected_counts) > 0:
+def get_image_bytes(path):
+    with open(path, "rb") as f:
+        return f.read()
 
-            filename = os.path.join(
-                SAVE_DIR,
-                f"detection_"
-                f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-            )
+def create_zip():
+    images = glob.glob(f"{SAVE_DIR}/*.jpg")
+    if not images:
+        return None
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
+        for img_path in images:
+            zf.write(img_path, os.path.basename(img_path))
+    memory_file.seek(0)
+    return memory_file.getvalue()
 
-            cv2.imwrite(filename, img)
+if st.session_state.gallery_mode:
+    st.markdown("## 🖼️ Detection Gallery")
 
-        return av.VideoFrame.from_ndarray(
-            img,
-            format="bgr24"
-        )
+    images = sorted(glob.glob(f"{SAVE_DIR}/*.jpg"), reverse=True)
 
-webrtc_streamer(
-    key="smartvision",
-    mode=WebRtcMode.SENDRECV,
-    video_processor_factory=VideoProcessor,
-    media_stream_constraints={
-        "video": True,
-        "audio": False
-    }
-)
+    col1, col2 = st.columns([1, 1])
 
-st.markdown("---")
+    with col1:
+        if st.button("⬅️ Back", use_container_width=True):
+            st.session_state.gallery_mode = False
+            st.rerun()
 
-st.subheader("🖼️ Saved Detection Frames")
+    with col2:
+        zip_data = create_zip()
+        if zip_data:
+            st.download_button("⬇️ Download ZIP", zip_data, "detections.zip", "application/zip", use_container_width=True)
 
-saved_images = glob.glob(f"{SAVE_DIR}/*.jpg")
-
-if saved_images:
-
-    cols = st.columns(3)
-
-    for i, image_path in enumerate(saved_images[-6:]):
-
-        cols[i % 3].image(
-            image_path,
-            use_column_width=True
-        )
+    if images:
+        cols = st.columns(3)
+        for idx, img_path in enumerate(images):
+            with cols[idx % 3]:
+                st.image(img_path, use_container_width=True)
+                filename = os.path.basename(img_path)
+                st.caption(filename)
+                st.download_button("⬇️ Download", get_image_bytes(img_path), filename, "image/jpeg", key=f"dl_{img_path}", use_container_width=True)
+                if st.button("🗑️ Delete", key=f"del_{img_path}", use_container_width=True):
+                    os.remove(img_path)
+                    st.rerun()
+    else:
+        st.info("No detections saved.")
 
 else:
-    st.info("No saved detection frames yet.")
+    left, right = st.columns([2.2, 1])
+
+    with left:
+        st.markdown('<div class="panel">', unsafe_allow_html=True)
+        webrtc_streamer(
+            key="camera",
+            mode=WebRtcMode.SENDRECV,
+            video_processor_factory=VideoProcessor,
+            async_processing=True,
+            media_stream_constraints={"video": True, "audio": False}
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with right:
+        images = sorted(glob.glob(f"{SAVE_DIR}/*.jpg"), reverse=True)
+
+        st.markdown(f"""
+        <div class="stat-box">
+            <div class="stat-title">📸 Saved Detections</div>
+            <div class="stat-value">{len(images)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div class="alert-box">
+            🚨 ALERT TARGET<br>
+            {target_object.upper()}
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("### 🖼️ Recent Captures")
+
+        if images:
+            for img_path in images[:4]:
+                st.image(img_path, use_container_width=True)
+                filename = os.path.basename(img_path)
+                st.caption(filename)
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.download_button("⬇️", get_image_bytes(img_path), filename, "image/jpeg", key=f"recent_dl_{img_path}", use_container_width=True)
+                with col2:
+                    if st.button("🗑️", key=f"recent_del_{img_path}", use_container_width=True):
+                        os.remove(img_path)
+                        st.rerun()
+
+            if len(images) > 4:
+                if st.button("🔍 View Full Gallery", use_container_width=True):
+                    st.session_state.gallery_mode = True
+                    st.rerun()
+        else:
+            st.info("No saved detections yet.")
 
 st.markdown("---")
-
-st.subheader("🖼️ Saved Detection Frames")
-
-saved_images = glob.glob(f"{SAVE_DIR}/*.jpg")
-
-if saved_images:
-
-    cols = st.columns(3)
-
-    for i, image_path in enumerate(saved_images[-6:]):
-
-        cols[i % 3].image(
-            image_path,
-            use_column_width=True
-        )
-
-else:
-    st.info("No saved detection frames yet.")
+st.caption("👨‍💻 Developed by Joan M. Aduvas | YOLOv8 + Streamlit + WebRTC")
