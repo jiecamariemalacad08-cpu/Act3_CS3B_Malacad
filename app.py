@@ -6,6 +6,12 @@ try:
 except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "tornado"])
 
+try:
+    from twilio.rest import Client
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "twilio"])
+    from twilio.rest import Client
+
 import os
 os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
 
@@ -26,6 +32,20 @@ st.set_page_config(
 
 SAVE_DIR = "detection_logs"
 os.makedirs(SAVE_DIR, exist_ok=True)
+
+# =========================
+# TWILIO CONFIG
+# =========================
+
+TWILIO_ACCOUNT_SID = "ACcd3c04d2fc8d40b43f6921f4d08b9403"
+TWILIO_AUTH_TOKEN = "YOUR_AUTH_TOKEN"
+TWILIO_PHONE_NUMBER = "+1234567890"
+ALERT_PHONE_NUMBER = "+639123456789"
+
+twilio_client = Client(
+    TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN
+)
 
 if "gallery_mode" not in st.session_state:
     st.session_state.gallery_mode = False
@@ -174,6 +194,7 @@ class VideoProcessor(VideoProcessorBase):
 
     def __init__(self):
         self.prev_objects = set()
+        self.alert_sent = False
 
     def recv(self, frame):
 
@@ -235,6 +256,29 @@ class VideoProcessor(VideoProcessorBase):
                         (255, 255, 255),
                         2
                     )
+
+        # =========================
+        # SEND TWILIO SMS ALERT
+        # =========================
+
+        if alert_detected and not self.alert_sent:
+
+            try:
+                twilio_client.messages.create(
+                    body=f"🚨 ALERT: {target_object.upper()} detected by YOLOv8 system.",
+                    from_=TWILIO_PHONE_NUMBER,
+                    to=ALERT_PHONE_NUMBER
+                )
+
+                print("SMS Alert Sent!")
+
+            except Exception as e:
+                print("Twilio Error:", e)
+
+            self.alert_sent = True
+
+        if not alert_detected:
+            self.alert_sent = False
 
         total_objects = sum(detected_counts.values())
 
