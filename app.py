@@ -33,9 +33,6 @@ st.set_page_config(
 SAVE_DIR = "detection_logs"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-# =========================
-# TWILIO CONFIG
-# =========================
 
 TWILIO_ACCOUNT_SID = "ACcd3c04d2fc8d40b43f6921f4d08b9403"
 TWILIO_AUTH_TOKEN = "YOUR_AUTH_TOKEN"
