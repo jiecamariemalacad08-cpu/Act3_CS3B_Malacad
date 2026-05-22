@@ -33,7 +33,6 @@ st.set_page_config(
 SAVE_DIR = "detection_logs"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
-
 TWILIO_ACCOUNT_SID = "ACcd3c04d2fc8d40b43f6921f4d08b9403"
 TWILIO_AUTH_TOKEN = "YOUR_AUTH_TOKEN"
 TWILIO_PHONE_NUMBER = "+1234567890"
@@ -57,84 +56,169 @@ CLASS_NAMES = list(model.names.values())
 st.markdown("""
 <style>
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
 html, body, [class*="css"] {
     font-family: 'Poppins', sans-serif;
+    scroll-behavior: smooth;
 }
 
 .stApp {
-    background: linear-gradient(135deg, #0f172a, #111827, #1e293b);
+    background:
+        radial-gradient(circle at top left, rgba(14,165,233,0.18), transparent 25%),
+        radial-gradient(circle at bottom right, rgba(99,102,241,0.18), transparent 30%),
+        linear-gradient(135deg, #020617, #0f172a, #111827);
     color: #f8fafc;
+    overflow-x: hidden;
+}
+
+.stApp::before {
+    content: "";
+    position: fixed;
+    width: 450px;
+    height: 450px;
+    background: rgba(56,189,248,0.12);
+    border-radius: 50%;
+    top: -150px;
+    left: -150px;
+    filter: blur(120px);
+    z-index: 0;
+}
+
+.stApp::after {
+    content: "";
+    position: fixed;
+    width: 350px;
+    height: 350px;
+    background: rgba(99,102,241,0.12);
+    border-radius: 50%;
+    bottom: -120px;
+    right: -120px;
+    filter: blur(120px);
+    z-index: 0;
 }
 
 .title {
     text-align: center;
-    font-size: clamp(35px, 5vw, 60px);
+    font-size: clamp(40px, 6vw, 72px);
     font-weight: 900;
-    color: #38bdf8;
-    text-shadow: 0px 0px 20px rgba(56,189,248,0.7);
-    margin-bottom: 5px;
+    background: linear-gradient(90deg, #38bdf8, #818cf8, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        filter: drop-shadow(0 0 10px rgba(56,189,248,0.4));
+    }
+    to {
+        filter: drop-shadow(0 0 25px rgba(129,140,248,0.8));
+    }
 }
 
 .subtitle {
     text-align: center;
-    color: #cbd5e1;
     font-size: 18px;
-    margin-bottom: 30px;
+    color: #cbd5e1;
+    margin-bottom: 35px;
+    letter-spacing: 0.5px;
 }
 
 .panel {
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(56,189,248,0.3);
-    padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0 0 25px rgba(56,189,248,0.15);
-    backdrop-filter: blur(12px);
-}
-
-.stButton > button {
-    background: linear-gradient(135deg, #0ea5e9, #2563eb);
-    color: white;
-    border: none;
-    border-radius: 14px;
-    padding: 12px 24px;
-    font-weight: 700;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 28px;
+    border-radius: 28px;
+    backdrop-filter: blur(18px);
+    box-shadow:
+        0 0 25px rgba(56,189,248,0.08),
+        inset 0 0 15px rgba(255,255,255,0.03);
     transition: all 0.3s ease;
-    box-shadow: 0 0 15px rgba(14,165,233,0.35);
 }
 
-.stButton > button:hover {
-    transform: scale(1.05);
-    background: linear-gradient(135deg, #0284c7, #1d4ed8);
-}
-
-.stDownloadButton > button {
-    background: linear-gradient(135deg, #22c55e, #15803d) !important;
-}
-
-.stDownloadButton > button:hover {
-    background: linear-gradient(135deg, #16a34a, #166534) !important;
+.panel:hover {
+    transform: translateY(-3px);
+    box-shadow:
+        0 0 35px rgba(56,189,248,0.18),
+        inset 0 0 20px rgba(255,255,255,0.05);
 }
 
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #111827, #0f172a);
-    border-right: 1px solid rgba(56,189,248,0.2);
+    background:
+        linear-gradient(180deg,
+        rgba(15,23,42,0.96),
+        rgba(2,6,23,0.98));
+    border-right: 1px solid rgba(56,189,248,0.12);
+    backdrop-filter: blur(14px);
 }
 
-.stSlider label,
-.stSelectbox label,
-.stToggle label {
-    color: #e2e8f0 !important;
-    font-weight: 600;
+section[data-testid="stSidebar"] * {
+    color: #f8fafc !important;
+}
+
+.stButton > button,
+.stDownloadButton > button {
+    width: 100%;
+    border: none;
+    border-radius: 18px;
+    padding: 14px 24px;
+    font-weight: 700;
+    font-size: 15px;
+    color: white;
+    transition: 0.3s ease;
+    background:
+        linear-gradient(135deg,
+        #0ea5e9,
+        #2563eb,
+        #7c3aed);
+    box-shadow:
+        0 0 15px rgba(14,165,233,0.25);
+}
+
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    transform: scale(1.03);
+    box-shadow:
+        0 0 30px rgba(99,102,241,0.45);
+}
+
+.stSlider > div > div {
+    color: #38bdf8 !important;
+}
+
+.stSelectbox div[data-baseweb="select"] {
+    background: rgba(15,23,42,0.85);
+    border-radius: 15px;
+    border: 1px solid rgba(56,189,248,0.15);
 }
 
 img {
-    border-radius: 18px;
-    border: 2px solid rgba(56,189,248,0.25);
-    box-shadow: 0 0 25px rgba(56,189,248,0.15);
+    border-radius: 22px;
+    border: 2px solid rgba(255,255,255,0.08);
+    box-shadow:
+        0 0 18px rgba(56,189,248,0.12);
+    transition: 0.3s ease;
+}
+
+img:hover {
+    transform: scale(1.02);
+    box-shadow:
+        0 0 35px rgba(99,102,241,0.3);
+}
+
+h2 {
+    color: #38bdf8 !important;
+    font-weight: 800 !important;
 }
 
 .block-container {
-    padding-top: 2rem;
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+    max-width: 1400px;
 }
 
 #MainMenu {
@@ -147,6 +231,42 @@ footer {
 
 header {
     visibility: hidden;
+}
+
+.dev-footer {
+    text-align: center;
+    margin-top: 45px;
+    padding: 18px;
+    border-radius: 20px;
+    background: rgba(15,23,42,0.55);
+    border: 1px solid rgba(255,255,255,0.05);
+    color: #94a3b8;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(56,189,248,0.08);
+}
+
+.dev-footer span {
+    color: #38bdf8;
+    font-weight: 700;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(#38bdf8, #6366f1);
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(#0ea5e9, #7c3aed);
 }
 
 </style>
@@ -253,10 +373,6 @@ class VideoProcessor(VideoProcessorBase):
                         (255, 255, 255),
                         2
                     )
-
-        # =========================
-        # SEND TWILIO SMS ALERT
-        # =========================
 
         if alert_detected and not self.alert_sent:
 
@@ -434,3 +550,9 @@ if image_files:
 
 else:
     st.info("No saved detections yet.")
+
+st.markdown("""
+<div class="dev-footer">
+✨ Developed by <span>Jieca Marie Malacad</span>
+</div>
+""", unsafe_allow_html=True)
