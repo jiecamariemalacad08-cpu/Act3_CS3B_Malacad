@@ -57,85 +57,203 @@ CLASS_NAMES = list(model.names.values())
 st.markdown("""
 <style>
 
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+
 html, body, [class*="css"] {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Rajdhani', sans-serif;
 }
 
 .stApp {
-    background: linear-gradient(135deg, #0f172a, #111827, #1e293b);
+    background:
+        linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.82)),
+        url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1920&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     color: #f8fafc;
+}
+
+.stApp::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px);
+    background-size: 35px 35px;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .title {
     text-align: center;
-    font-size: clamp(35px, 5vw, 60px);
-    font-weight: 900;
-    color: #38bdf8;
-    text-shadow: 0px 0px 20px rgba(56,189,248,0.7);
-    margin-bottom: 5px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(42px, 6vw, 75px);
+    font-weight: 800;
+    color: #00f5ff;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-shadow:
+        0 0 10px #00f5ff,
+        0 0 20px #00f5ff,
+        0 0 40px #00f5ff;
+    animation: flicker 2s infinite alternate;
+}
+
+@keyframes flicker {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.92;
+    }
 }
 
 .subtitle {
     text-align: center;
-    color: #cbd5e1;
-    font-size: 18px;
-    margin-bottom: 30px;
+    color: #d1d5db;
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 35px;
+    letter-spacing: 1px;
 }
 
 .panel {
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(56,189,248,0.3);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(0,255,255,0.2);
+    border-radius: 28px;
     padding: 25px;
-    border-radius: 20px;
-    box-shadow: 0 0 25px rgba(56,189,248,0.15);
-    backdrop-filter: blur(12px);
-}
-
-.stButton > button {
-    background: linear-gradient(135deg, #0ea5e9, #2563eb);
-    color: white;
-    border: none;
-    border-radius: 14px;
-    padding: 12px 24px;
-    font-weight: 700;
+    backdrop-filter: blur(16px);
+    box-shadow:
+        0 0 20px rgba(0,255,255,0.12),
+        inset 0 0 15px rgba(255,255,255,0.03);
     transition: all 0.3s ease;
-    box-shadow: 0 0 15px rgba(14,165,233,0.35);
 }
 
-.stButton > button:hover {
-    transform: scale(1.05);
-    background: linear-gradient(135deg, #0284c7, #1d4ed8);
+.panel:hover {
+    border: 1px solid rgba(0,255,255,0.5);
+    box-shadow:
+        0 0 35px rgba(0,255,255,0.25);
 }
 
-.stDownloadButton > button {
-    background: linear-gradient(135deg, #22c55e, #15803d) !important;
-}
-
-.stDownloadButton > button:hover {
-    background: linear-gradient(135deg, #16a34a, #166534) !important;
-}
 
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #111827, #0f172a);
-    border-right: 1px solid rgba(56,189,248,0.2);
+    background:
+        linear-gradient(180deg,
+        rgba(0,0,0,0.96),
+        rgba(15,23,42,0.96));
+    border-right: 1px solid rgba(0,255,255,0.15);
 }
 
-.stSlider label,
-.stSelectbox label,
+
+section[data-testid="stSidebar"] * {
+    color: #f8fafc !important;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+
+.stButton > button,
+.stDownloadButton > button {
+    width: 100%;
+    border: none;
+    border-radius: 16px;
+    padding: 14px 22px;
+    background: linear-gradient(135deg, #00f5ff, #0066ff);
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow:
+        0 0 15px rgba(0,245,255,0.3);
+}
+
+.stButton > button:hover,
+.stDownloadButton > button:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow:
+        0 0 30px rgba(0,245,255,0.6);
+}
+
+.stSlider label {
+    color: #00f5ff !important;
+    font-weight: 700;
+}
+
+.stSlider > div > div {
+    color: #00f5ff !important;
+}
+
+.stSelectbox label {
+    color: #00f5ff !important;
+    font-weight: 700;
+}
+
+.stSelectbox div[data-baseweb="select"] {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(0,255,255,0.2);
+    border-radius: 15px;
+}
+
 .stToggle label {
-    color: #e2e8f0 !important;
+    color: #ffffff !important;
     font-weight: 600;
 }
 
 img {
-    border-radius: 18px;
-    border: 2px solid rgba(56,189,248,0.25);
-    box-shadow: 0 0 25px rgba(56,189,248,0.15);
+    border-radius: 24px;
+    border: 2px solid rgba(0,255,255,0.15);
+    box-shadow:
+        0 0 20px rgba(0,255,255,0.15);
+    transition: all 0.3s ease;
 }
 
-.block-container {
-    padding-top: 2rem;
+img:hover {
+    transform: scale(1.03);
+    border: 2px solid rgba(0,255,255,0.5);
+    box-shadow:
+        0 0 35px rgba(0,255,255,0.4);
 }
+
+
+h2 {
+    color: #00f5ff !important;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+}
+
+
+.stInfo {
+    background: rgba(0,255,255,0.08) !important;
+    border: 1px solid rgba(0,255,255,0.2) !important;
+    border-radius: 16px !important;
+}
+
+
+.dev-footer {
+    text-align: center;
+    margin-top: 45px;
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(0,255,255,0.15);
+    color: #d1d5db;
+    font-size: 16px;
+    letter-spacing: 1px;
+    backdrop-filter: blur(12px);
+    box-shadow:
+        0 0 20px rgba(0,255,255,0.1);
+}
+
+.dev-footer span {
+    color: #00f5ff;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+}
+
 
 #MainMenu {
     visibility: hidden;
@@ -149,9 +267,27 @@ header {
     visibility: hidden;
 }
 
+/* SCROLLBAR */
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(#00f5ff, #0066ff);
+    border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(#00d9ff, #0051ff);
+}
+
 </style>
 """, unsafe_allow_html=True)
-
 st.markdown("""
 <div class="title">📹 Live Object Detection & Tracing</div>
 
